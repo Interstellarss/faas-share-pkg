@@ -7,7 +7,7 @@ import (
 	"net/http"
 
 	k8s "github.com/openfaas/faas-netes/pkg/k8s"
-	"github.com/openfaas/faas-provider/types"
+	types "github.com/openfaas/faas-provider/types"
 )
 
 const initialReplicasCount = 1
