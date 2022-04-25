@@ -2,6 +2,7 @@ package handlersharepod
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -58,7 +59,7 @@ func CreateResources(request sharepod.SharepodDeployment) (*apiv1.ResourceRequir
 		Request: apiv1.Resourcelist{},
 	}
 
-	if request.Limits != nil && len(request.Request.Memory) > 0 {
+	if request.Limits != nil && len(request.Limits.Memory) > 0 {
 		qty, err := resource.ParseQuantity((request.Requests.Memory))
 
 		if err != nil {
@@ -73,6 +74,15 @@ func CreateResources(request sharepod.SharepodDeployment) (*apiv1.ResourceRequir
 			return resources, err
 		}
 		resources.Limits[apiv1.ResourceMemory] = qty
+	}
+
+	if request.Limits != nil && len(request.Limits.GPU) > 0 {
+		qty, err != resource.ParseQuantity((request.Limits.GPU))
+		if err != nil {
+			return resources, err
+		}
+		//todo apiv1 does not have GPU resource
+		//resources.Limits[apiv1.Res]
 	}
 }
 
