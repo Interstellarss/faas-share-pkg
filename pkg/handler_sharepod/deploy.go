@@ -54,10 +54,13 @@ func buildEnvVars(reuquest *sharepod.SharepodDeployment) []corev1.EnvVar {
 }
 
 func CreateResources(request sharepod.SharepodDeployment) (*apiv1.ResourceRequirements, error) {
+	//need to modify here
 	resources := &apiv1.ResourceRequiremtns{
 		Limits:  apiv1.ResourceList{},
 		Request: apiv1.Resourcelist{},
 	}
+
+
 
 	if request.Limits != nil && len(request.Limits.Memory) > 0 {
 		qty, err := resource.ParseQuantity((request.Requests.Memory))

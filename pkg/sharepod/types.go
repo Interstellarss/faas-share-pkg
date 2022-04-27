@@ -18,15 +18,23 @@ type Sharepod struct {
 //}
 
 type SharepodSpec struct {
-	Name string `json:"name"`
+	//Name string `json:"name"`
+	//this is inside ObjectMeta
+	TerminationGracePeriodSeconds int `json:"terminationGracePeriodSeconds, omitempty"`
 
-	Image string `json:"image"`
+	//Image string `json:"image"`
+	//use Containers instead, regarding how it was defined in KubeShare
+	Containers Container `json:"containers,omitempty"`
+
+	RestartPolicy string `json:"restartPolicy, omitempty"`
+
 	// +optional
 	Handler string `json:"handler,omitempty"`
 	// +optional
 	//TODO: should we put annotations here?
 	//may not be needed in kubeshare
 	//Annotations *map[string]string `json:"annotations,omitempty"`
+
 	// +optional
 	Labels *map[string]string `json:"labels,omitempty"`
 	// +optional
@@ -36,9 +44,9 @@ type SharepodSpec struct {
 	// +optional
 	Secrets []string `json:"secrets,omitempty"`
 	// +optional
-	Limits *SharepodResources `json:"limits,omitempty"`
+	//Limits *SharepodResources `json:"limits,omitempty"`
 	// +optional
-	Requests *SharepodResources `json:"requests,omitempty"`
+	//Requests *SharepodResources `json:"requests,omitempty"`
 	// +optional
 	ReadOnlyRootFilesystem bool `json:"readOnlyRootFilesystem"`
 }
@@ -50,11 +58,21 @@ type SharepodResources struct {
 }
 
 // FunctionList is a list of Sharepod resources
+//this is already given in hte kubeshare packages
+
+/*
 type SharepodList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata"`
 
 	Items []Sharepod `json:"items"`
+}
+*/
+
+type Container struct {
+	Name    string   `jsom:"name"`
+	Image   string   `json:"image"`
+	Command []string `json:"command, omitempty"`
 }
 
 // Profile and ProfileSpec are used to customise the Pod template for
