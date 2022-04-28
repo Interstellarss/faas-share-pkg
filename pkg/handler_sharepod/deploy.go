@@ -102,6 +102,26 @@ func makeDeploymentSpec(request sharepod.SharepodDeployment, existingSecrets map
 		}
 	}
 
+	nodeselector := createSelector(request.Constraints)
+
+	resource, resourceErr := createResources(request)
+
+	if resourceErr != nil {
+		return nil, resourceErr
+	}
+
+	var imagePullPolicy apiv1.PullPolicy
+	switch factory.Config.ImagePullPolicy{
+	case "Never":
+		imagePullPolicy = apiv1.PullNever
+	case "IfNotPresent":
+		imagePullPolicy = apiv1.PullIfNotPresent
+	default:
+		imagePullPolicy = apiv1.PullAlways
+	}
+
+	//todo: here continue
+
 }
 
 func buildEnvVars(request *sharepod.SharepodDeployment) []corev1.EnvVar {
@@ -125,6 +145,24 @@ func buildEnvVars(request *sharepod.SharepodDeployment) []corev1.EnvVar {
 	})
 
 	return envVars
+}
+
+
+
+func createSelector(constraints []string) map[string]string {
+	selector :=make(map[string]string)
+
+	if len(constraints) > 0 {
+		for _, constraint := range constraints {
+			parts := strings.Split(constraint, "=")
+
+			if len(parts) == 2 {
+				selector[parts[0]] = parts[1]
+			}
+		}
+	} 
+
+	return selector
 }
 
 func CreateResources(request sharepod.SharepodDeployment) (*sharepod.SharepodRequirements, error) {
