@@ -1,5 +1,6 @@
 package sharepod
 
+//TODO: not yet finalized, still need to check its validation
 type SharepodDeployment struct {
 
 	// Service is the name of the function deployment
@@ -32,11 +33,15 @@ type SharepodDeployment struct {
 	// faas-provider or the gateway
 	Annotations *map[string]string `json:"annotations,omitempty"`
 
-	// Limits for function
-	Limits *SharepodResources `json:"limits,omitempty"`
+	/*
+		// Limits for function
+		GPULimits *SharepodResources `json:"limits,omitempty"`
 
-	// Requests of resources requested by function
-	Requests *SharepodResources `json:"requests,omitempty"`
+		// Requests of resources requested by function
+		GPURequests *SharepodResources `json:"requests,omitempty"`
+	*/
+
+	Resources *SharepodResources `json:"resources, omitempty"`
 
 	// ReadOnlyRootFilesystem removes write-access from the root filesystem
 	// mount-point.

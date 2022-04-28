@@ -53,8 +53,9 @@ type SharepodSpec struct {
 
 //SharepodResources is used to set GPU and memory limits and requests
 type SharepodResources struct {
-	Memory string `json:"memory,omitempty"`
-	GPU    string `json:"gpu,omitempty"`
+	GPULimit   float64 `json:"gpuLimit"`
+	GPURequest float64 `json:"gpuRequest"`
+	Memory     int64   `json:"memory"`
 }
 
 // FunctionList is a list of Sharepod resources
@@ -135,4 +136,11 @@ type ProfileList struct {
 	metav1.ListMeta `json:"metadata"`
 
 	Items []Profile `json:"items"`
+}
+
+type SharepodRequirements struct {
+	//Limits
+	GPULimit   float64 `json:"gpuLimit"`
+	GPURequest float64 `json:"gpuRequest"`
+	Memory     int64   `json:"memory"`
 }

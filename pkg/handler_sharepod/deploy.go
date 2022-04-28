@@ -2,7 +2,6 @@ package handlersharepod
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -53,39 +52,46 @@ func buildEnvVars(reuquest *sharepod.SharepodDeployment) []corev1.EnvVar {
 
 }
 
-func CreateResources(request sharepod.SharepodDeployment) (*apiv1.ResourceRequirements, error) {
+func CreateResources(request sharepod.SharepodDeployment) (sharepod.SharepodRequirements, error) {
 	//need to modify here
-	resources := &apiv1.ResourceRequiremtns{
-		Limits:  apiv1.ResourceList{},
-		Request: apiv1.Resourcelist{},
+	/*
+		resources := &apiv1.ResourceRequiremtns{
+			Limits:  apiv1.ResourceList{},
+			Request: apiv1.Resourcelist{},
+		}
+	*/
+	//Instantialize SharepodRequirements
+	resources := &sharepod.SharepodRequirements{
+		GPULimit:   0.0,
+		GPURequest: 0.0,
+		Memory:     0,
 	}
 
-
-
-	if request.Limits != nil && len(request.Limits.Memory) > 0 {
-		qty, err := resource.ParseQuantity((request.Requests.Memory))
+	if request.Resources != nil && request.Resources.Memory > 0 {
+		qty, err := resource.ParseQuantity((request.Resources.Memory))
 
 		if err != nil {
 			return resources, err
 		}
-		resources.Limits[apiv1.ResourceMemory] = qty
+		resources.Memory = qty
 	}
-
-	if request.Requests != nil && len(request.Requests.Memory) > 0 {
-		qty, err := resource.ParseQuantity(request.Limits.Memory)
-		if err != nil {
-			return resources, err
+	/*
+		if request.Requests != nil && len(request.Requests.Memory) > 0 {
+			qty, err := resource.ParseQuantity(request.Limits.Memory)
+			if err != nil {
+				return resources, err
+			}
+			resources.Limits[apiv1.ResourceMemory] = qty
 		}
-		resources.Limits[apiv1.ResourceMemory] = qty
-	}
+	*/
 
-	if request.Limits != nil && len(request.Limits.GPU) > 0 {
-		qty, err != resource.ParseQuantity((request.Limits.GPU))
+	if request.Resources != nil && len(request.Resources.GPULimit) > 0 {
+		qty, err := resource.ParseQuantity((request.Resources.GPULimit))
 		if err != nil {
-			return resources, err
+			return resource, err
 		}
 		//todo apiv1 does not have GPU resource
-		//resources.Limits[apiv1.Res]
+		resources.GPULimit = qty.AsApproximateFloat64()
 	}
 }
 
