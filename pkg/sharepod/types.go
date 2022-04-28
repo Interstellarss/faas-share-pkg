@@ -3,6 +3,8 @@ package sharepod
 import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"k8s.io/apimachinery/pkg/api/resource"
 )
 
 type Sharepod struct {
@@ -53,9 +55,9 @@ type SharepodSpec struct {
 
 //SharepodResources is used to set GPU and memory limits and requests
 type SharepodResources struct {
-	GPULimit   float64 `json:"gpuLimit"`
-	GPURequest float64 `json:"gpuRequest"`
-	Memory     int64   `json:"memory"`
+	GPULimit   string `json:"gpuLimit"`
+	GPURequest string `json:"gpuRequest"`
+	Memory     string `json:"memory"`
 }
 
 // FunctionList is a list of Sharepod resources
@@ -140,7 +142,7 @@ type ProfileList struct {
 
 type SharepodRequirements struct {
 	//Limits
-	GPULimit   float64 `json:"gpuLimit"`
-	GPURequest float64 `json:"gpuRequest"`
-	Memory     int64   `json:"memory"`
+	GPULimit   resource.Quantity `json:"gpuLimit"`
+	GPURequest resource.Quantity `json:"gpuRequest"`
+	Memory     resource.Quantity `json:"memory"`
 }

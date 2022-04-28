@@ -6,7 +6,9 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"sort"
 	"strconv"
+	"strings"
 
 	"github.com/Interstellarss/faas-share-pkg/pkg/sharepod"
 	k8s "github.com/openfaas/faas-netes/pkg/k8s"
@@ -46,13 +48,47 @@ func MakeDeployHandler(funciotnNamespace string, factory k8s.FunctionFactory) ht
 func makeDeploymentSpec(request sharepod.SharepodDeployment, existingSecrets map[string]*apiv1.Secret, factory k8s.FunctionFactory) (*appsv1.Deployment, error) {
 	envVars := buildEnvVars(&request)
 
+	initialReplicas := int32p(initialReplicasCount)
+
+	labels := map[string]string{
+		"faas-share_function": request.Service,
+	}
+
+	if request.Labels != nil {
+		if min := getMinReplicaCount(*request.Labels); min != nil {
+			initialReplicas = min
+		}
+		for k, v := range *request.Labels {
+			labels[k] = v
+		}
+	}
+
 }
 
-func buildEnvVars(reuquest *sharepod.SharepodDeployment) []corev1.EnvVar {
+func buildEnvVars(request *sharepod.SharepodDeployment) []corev1.EnvVar {
+	envVars := []corev1.EnvVar{}
 
+	if len(request.EnvProcess) > 0 {
+		envVars = append(envVars, corev1.EnvVar{
+			Name:  k8s.EnvProcessName,
+			Value: request.EnvProcess,
+		})
+	}
+	for k, v := range request.EnvVars {
+		envVars = append(envVars, corev1.EnvVar{
+			Name:  k,
+			Value: v,
+		})
+	}
+
+	sort.SliceStable(envVars, func(i, j int) bool {
+		return strings.Compare(envVars[i].Name, envVars[j].Name) == -1
+	})
+
+	return envVars
 }
 
-func CreateResources(request sharepod.SharepodDeployment) (sharepod.SharepodRequirements, error) {
+func CreateResources(request sharepod.SharepodDeployment) (*sharepod.SharepodRequirements, error) {
 	//need to modify here
 	/*
 		resources := &apiv1.ResourceRequiremtns{
@@ -61,13 +97,9 @@ func CreateResources(request sharepod.SharepodDeployment) (sharepod.SharepodRequ
 		}
 	*/
 	//Instantialize SharepodRequirements
-	resources := &sharepod.SharepodRequirements{
-		GPULimit:   0.0,
-		GPURequest: 0.0,
-		Memory:     0,
-	}
+	resources := &sharepod.SharepodRequirements{}
 
-	if request.Resources != nil && request.Resources.Memory > 0 {
+	if request.Resources != nil && len(request.Resources.Memory) > 0 {
 		qty, err := resource.ParseQuantity((request.Resources.Memory))
 
 		if err != nil {
@@ -88,11 +120,22 @@ func CreateResources(request sharepod.SharepodDeployment) (sharepod.SharepodRequ
 	if request.Resources != nil && len(request.Resources.GPULimit) > 0 {
 		qty, err := resource.ParseQuantity((request.Resources.GPULimit))
 		if err != nil {
-			return resource, err
+			return resources, err
 		}
 		//todo apiv1 does not have GPU resource
-		resources.GPULimit = qty.AsApproximateFloat64()
+		resources.GPULimit = qty
 	}
+
+	if request.Resources != nil && len(request.Resources.GPURequest) > 0 {
+		qty, err := resource.ParseQuantity((request.Resources.GPURequest))
+		if err != nil {
+			return resources, err
+		}
+
+		resources.GPURequest = qty
+	}
+
+	return resources, nil
 }
 
 func getMinReplicaCount(labels map[string]string) *int32 {
