@@ -10,9 +10,9 @@ import (
 	"strconv"
 	"strings"
 
+	//"github.com/Interstellarss/faas-share-pkg/pkg/handlersharepod"
 	"github.com/Interstellarss/faas-share-pkg/pkg/sharepod"
 	k8s "github.com/openfaas/faas-netes/pkg/k8s"
-	types "github.com/openfaas/faas-provider/types"
 
 	appsv1 "k8s.io/api/apps/v1"
 	apiv1 "k8s.io/api/core/v1"
@@ -34,13 +34,52 @@ func MakeDeployHandler(funciotnNamespace string, factory k8s.FunctionFactory) ht
 
 		body, _ := ioutil.ReadAll(r.Body)
 
-		request := types.FunctionDeployment{}
+		request := sharepod.SharepodDeployment{}
 		err := json.Unmarshal(body, &request)
 
 		if err != nil {
 			wrappedErr := fmt.Errorf("failed ot unarshal request: %s", err.Error())
-
+			http.Error(w, wrappedErr.Error(), http.StatusBadRequest)
+			return
 		}
+
+		if err := validateDeployRequest(&request); err != nil {
+			wrappedErr := fmt.Errorf("validation failed: %s", err.Error())
+			http.Error(w, wrappedErr.Error(), http.StatusBadRequest)
+			return
+		}
+
+		namespace := funciotnNamespace
+		if len(request.Namespace) > 0 {
+			namespace = request.Namespace
+		}
+		existingSecrets, err := secret.GetSecrets(namespace, request.Secrets)
+		if err != nil {
+			wrappedErr := fmt.Errorf("undable to fetch secrests: %s", err.Error())
+			http.Error(w, wrappedErr.Error(), http.StatusBadRequest)
+			return
+		}
+
+		deploymentSpec, err := secrets.GetSecrets(namespace, request.Secrets)
+		if err != nil {
+			wrappedErr := fmt.Errorf("unable to fetch secrets: %s", err, Error())
+			http.Error(w, wrappedErr.Error(), http.StatusBadRequest)
+			return
+		}
+
+		var profileList []k8s.Profile
+		if request.Annotations != nil {
+			profileNamespace :=
+		}
+
+
+
+
+
+
+
+		log.Printf("")
+		w.WriteHeader(http.StatusAccpeted)
 
 	}
 }
