@@ -12,7 +12,7 @@ import (
 	"strings"
 
 	//"github.com/Interstellarss/faas-share-pkg/pkg/handlersharepod"
-	"github.com/Interstellarss/faas-share-pkg/pkg/sharepod"
+
 	k8s "github.com/openfaas/faas-netes/pkg/k8s"
 	"github.com/openfaas/faas-provider/types"
 
@@ -22,11 +22,13 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
+
+	kubesharev1 "github.com/NTHU-LSALAB/KubeShare/pkg/apis/kubeshare/v1"
 )
 
 const initialReplicasCount = 1
 
-func MakeDeployHandler(funciotnNamespace string, factory k8s.FunctionFactory) http.HandlerFunc {
+func MakeDeployHandler(functionNamespace string, factory k8s.FunctionFactory) http.HandlerFunc {
 	secret := k8s.NewSecretsClient(factory.Client)
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -53,7 +55,7 @@ func MakeDeployHandler(funciotnNamespace string, factory k8s.FunctionFactory) ht
 			return
 		}
 
-		namespace := funciotnNamespace
+		namespace := functionNamespace
 		if len(request.Namespace) > 0 {
 			namespace = request.Namespace
 		}
@@ -139,7 +141,7 @@ func makeDeploymentSpec(request types.FunctionDeployment, existingSecrets map[st
 
 	nodeselector := createSelector(request.Constraints)
 
-	resource, resourceErr := createResources(request)
+	resources, resourceErr := createResources(request)
 
 	if resourceErr != nil {
 		return nil, resourceErr
@@ -214,7 +216,7 @@ func makeDeploymentSpec(request types.FunctionDeployment, existingSecrets map[st
 								{
 									Name:          "http",
 									ContainerPort: factory.Config.RuntimeHTTPPort,
-									Protocol:      corev1.ProtocolTCPapiv1.ProtocolTCP,
+									Protocol:      corev1.ProtocolTCP,
 								},
 							},
 							Env:             envVars,
@@ -223,7 +225,7 @@ func makeDeploymentSpec(request types.FunctionDeployment, existingSecrets map[st
 							LivenessProbe:   probes.Liveness,
 							ReadinessProbe:  probes.Liveness,
 							SecurityContext: &corev1.SecurityContext{
-								ReadOnlyRootFilesystem:   &reques.ReadOnlyRootFilesystem,
+								ReadOnlyRootFilesystem:   &request.ReadOnlyRootFilesystem,
 								AllowPrivilegeEscalation: &allowPrivilegeEscalation,
 							},
 						},
@@ -332,52 +334,86 @@ func createSelector(constraints []string) map[string]string {
 }
 
 //TODO: make it fit for types.FunctionDeployment
-func CreateResources(request sharepod.SharepodDeployment) (*sharepod.SharepodRequirements, error) {
+func createResources(request types.FunctionDeployment) (*apiv1.ResourceRequirements, error) {
 	//need to modify here
-	/*
-		resources := &apiv1.ResourceRequiremtns{
-			Limits:  apiv1.ResourceList{},
-			Request: apiv1.Resourcelist{},
-		}
-	*/
-	//Instantialize SharepodRequirements
-	resources := &sharepod.SharepodRequirements{}
 
-	if request.Resources != nil && len(request.Resources.Memory) > 0 {
-		qty, err := resource.ParseQuantity((request.Resources.Memory))
+	resources := &apiv1.ResourceRequirements{
+		Limits:   apiv1.ResourceList{},
+		Requests: apiv1.ResourceList{},
+	}
+
+	annotation := *request.Annotations
+
+	//Instantialize SharepodRequirements
+	//resources := &sharepod.SharepodRequirements{}
+
+	if request.Limits != nil && len(annotation[kubesharev1.KubeShareResourceGPULimit]) > 0 {
+		qty, err := resource.ParseQuantity(annotation[kubesharev1.KubeShareResourceGPULimit])
 
 		if err != nil {
 			return resources, err
 		}
-		resources.Memory = qty
+		//toodo here
+		resources.Limits[apiv1.ResourceCPU] = qty
 	}
+
+	if request.Limits != nil && len(annotation[kubesharev1.KubeShareResourceGPURequest]) > 0 {
+		qty, err := resource.ParseQuantity(annotation[kubesharev1.KubeShareResourceGPURequest])
+
+		if err != nil {
+			return resources, err
+		}
+		//toodo here
+		resources.Requests[apiv1.ResourceCPU] = qty
+	}
+
+	if request.Limits != nil && len(annotation[kubesharev1.KubeShareResourceGPUMemory]) > 0 {
+		qty, err := resource.ParseQuantity(annotation[kubesharev1.KubeShareResourceGPUMemory])
+
+		if err != nil {
+			return resources, err
+		}
+		//toodo here
+		resources.Limits[apiv1.ResourceMemory] = qty
+	}
+
+	if request.Limits != nil && len(annotation[kubesharev1.KubeShareResourceGPUMemory]) > 0 {
+		qty, err := resource.ParseQuantity(annotation[kubesharev1.KubeShareResourceGPUMemory])
+
+		if err != nil {
+			return resources, err
+		}
+		//toodo here
+		resources.Requests[apiv1.ResourceMemory] = qty
+	}
+
 	/*
-		if request.Requests != nil && len(request.Requests.Memory) > 0 {
-			qty, err := resource.ParseQuantity(request.Limits.Memory)
+			if request.Requests != nil && len(request.Requests.Memory) > 0 {
+				qty, err := resource.ParseQuantity(request.Limits.Memory)
+				if err != nil {
+					return resources, err
+				}
+				resources.Limits[apiv1.ResourceMemory] = qty
+			}
+
+		if request.Resources != nil && len(request.Resources.GPULimit) > 0 {
+			qty, err := resource.ParseQuantity((request.Resources.GPULimit))
 			if err != nil {
 				return resources, err
 			}
-			resources.Limits[apiv1.ResourceMemory] = qty
+			//todo apiv1 does not have GPU resource
+			resources.GPULimit = qty
+		}
+
+		if request.Resources != nil && len(request.Resources.GPURequest) > 0 {
+			qty, err := resource.ParseQuantity((request.Resources.GPURequest))
+			if err != nil {
+				return resources, err
+			}
+
+			resources.GPURequest = qty
 		}
 	*/
-
-	if request.Resources != nil && len(request.Resources.GPULimit) > 0 {
-		qty, err := resource.ParseQuantity((request.Resources.GPULimit))
-		if err != nil {
-			return resources, err
-		}
-		//todo apiv1 does not have GPU resource
-		resources.GPULimit = qty
-	}
-
-	if request.Resources != nil && len(request.Resources.GPURequest) > 0 {
-		qty, err := resource.ParseQuantity((request.Resources.GPURequest))
-		if err != nil {
-			return resources, err
-		}
-
-		resources.GPURequest = qty
-	}
 
 	return resources, nil
 }
