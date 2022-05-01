@@ -8,4 +8,5 @@ require (
 	github.com/openfaas/faas-provider v0.18.9
 	k8s.io/api v0.21.3
 	k8s.io/apimachinery v0.21.3
+	k8s.io/klog v1.0.0
 )
